@@ -9,5 +9,5 @@ FROM node:20-alpine
 WORKDIR /app
 ENV NODE_ENV=production
 COPY --from=builder /app ./
-EXPOSE 3000
-CMD ["npm","run","start","--","-p","3000"]
+EXPOSE 80
+CMD ["sh","-c","npm run start -- -p ${PORT:-3000}"]
