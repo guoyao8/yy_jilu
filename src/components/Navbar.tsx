@@ -3,12 +3,13 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useAppStore } from "@/store"
-import { Home, BarChart3, User } from "lucide-react"
+import { Home, BarChart3, User, Baby } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const navItems = [
   { href: "/", label: "喂养", icon: Home },
   { href: "/statistics", label: "记录", icon: BarChart3 },
+  { href: "/growth", label: "成长", icon: Baby },
   { href: "/settings", label: "我的", icon: User },
 ]
 

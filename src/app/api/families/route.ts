@@ -1,22 +1,30 @@
 import { NextResponse } from "next/server"
-import db from "@/server/db"
+import { getDb } from "@/server/cloudbase"
+
+export const runtime = "nodejs"
 
 export async function GET(request: Request) {
+  const db = getDb()
   const { searchParams } = new URL(request.url)
   const inviteCode = searchParams.get("inviteCode")
+  const id = searchParams.get("id")
 
-  if (inviteCode) {
-    const stmt = db.prepare("SELECT id, name, invite_code as inviteCode, admin_id as adminId, created_at as createdAt FROM families WHERE invite_code = ?")
-    const family = stmt.get(inviteCode)
-    return NextResponse.json(family || null)
+  if (id) {
+    const result = await db.collection("families").where({ id }).get()
+    return NextResponse.json(result.data?.[0] || null)
   }
 
-  const stmt = db.prepare("SELECT id, name, invite_code as inviteCode, admin_id as adminId, created_at as createdAt FROM families ORDER BY created_at DESC")
-  const families = stmt.all()
-  return NextResponse.json(families)
+  if (inviteCode) {
+    const result = await db.collection("families").where({ inviteCode }).get()
+    return NextResponse.json(result.data?.[0] || null)
+  }
+
+  const result = await db.collection("families").orderBy("createdAt", "desc").get()
+  return NextResponse.json(result.data || [])
 }
 
 export async function POST(request: Request) {
+  const db = getDb()
   const body = await request.json()
   const { id, name, inviteCode, adminId } = body || {}
 
@@ -24,11 +32,20 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "参数不完整" }, { status: 400 })
   }
 
-  const stmt = db.prepare(
-    "INSERT INTO families (id, name, invite_code, admin_id, created_at) VALUES (?, ?, ?, ?, ?)"
-  )
   try {
-    stmt.run(id, name, inviteCode, adminId, new Date().toISOString())
+    const existing = await db.collection("families").where({ inviteCode }).get()
+    if (existing.data?.length) {
+      return NextResponse.json({ error: "邀请码已存在" }, { status: 400 })
+    }
+    await db.collection("families").add({
+      data: {
+        id,
+        name,
+        inviteCode,
+        adminId,
+        createdAt: new Date().toISOString(),
+      },
+    })
   } catch (error: any) {
     return NextResponse.json({ error: error?.message || "创建失败" }, { status: 500 })
   }

@@ -7,7 +7,6 @@ import { useAppStore } from "@/store"
 import { Button } from "@/components/ui/Button"
 import { Input } from "@/components/ui/Input"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card"
-import { generateId } from "@/lib/utils"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -17,20 +16,30 @@ export default function LoginPage() {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
 
+  const fetchJson = async (url: string, options?: RequestInit) => {
+    const res = await fetch(url, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...(options?.headers || {}),
+      },
+    })
+    if (!res.ok) {
+      const data = await res.json().catch(() => null)
+      throw new Error(data?.error || "请求失败")
+    }
+    return res.json()
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
     setLoading(true)
 
     try {
-      const storedUsers = localStorage.getItem("baby-feeding-users")
-      const users = storedUsers ? JSON.parse(storedUsers) : []
-      
-      const user = users.find((u: { phone: string; password: string }) => 
-        u.phone === phone && u.password === password
-      )
+      const user = await fetchJson(`/api/users?phone=${encodeURIComponent(phone)}`)
 
-      if (!user) {
+      if (!user || user.password !== password) {
         setError("手机号或密码错误")
         setLoading(false)
         return
@@ -38,15 +47,18 @@ export default function LoginPage() {
 
       setCurrentUser(user)
 
-      const storedFamilies = localStorage.getItem("baby-feeding-families")
-      const families = storedFamilies ? JSON.parse(storedFamilies) : []
-      const userFamily = families.find((f: { id: string }) => f.id === user.familyId)
-      
+      let userFamily = null
+      if (user.familyId) {
+        userFamily = await fetchJson(`/api/families?id=${encodeURIComponent(user.familyId)}`)
+      }
+
       if (userFamily) {
         setFamily(userFamily)
-        
-        const familyMembers = users.filter((u: { familyId: string }) => u.familyId === userFamily.id)
-        setMembers(familyMembers)
+
+        const familyMembers = await fetchJson(
+          `/api/users?familyId=${encodeURIComponent(userFamily.id)}`
+        )
+        setMembers(familyMembers || [])
       }
 
       router.push("/")

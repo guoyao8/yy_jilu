@@ -11,7 +11,7 @@ import { generateId, generateInviteCode } from "@/lib/utils"
 
 export default function RegisterPage() {
   const router = useRouter()
-  const { setCurrentUser, setFamily, setMembers, createFamily } = useAppStore()
+  const { setCurrentUser, setFamily, setMembers } = useAppStore()
   const [phone, setPhone] = useState("")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
@@ -21,6 +21,21 @@ export default function RegisterPage() {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
   const [mode, setMode] = useState<"choose" | "create" | "join">("choose")
+
+  const fetchJson = async (url: string, options?: RequestInit) => {
+    const res = await fetch(url, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...(options?.headers || {}),
+      },
+    })
+    if (!res.ok) {
+      const data = await res.json().catch(() => null)
+      throw new Error(data?.error || "请求失败")
+    }
+    return res.json()
+  }
 
   const validatePhone = (phone: string) => {
     return /^1[3-9]\d{9}$/.test(phone)
@@ -48,13 +63,19 @@ export default function RegisterPage() {
     setError("")
 
     try {
-      const storedUsers = localStorage.getItem("baby-feeding-users")
-      const users = storedUsers ? JSON.parse(storedUsers) : []
-      
-      if (users.some((u: { phone: string }) => u.phone === phone)) {
+      const existingUser = await fetchJson(`/api/users?phone=${encodeURIComponent(phone)}`)
+      if (existingUser) {
         setError("该手机号已注册")
         setLoading(false)
         return
+      }
+
+      const family = {
+        id: generateId(),
+        name: familyName.trim(),
+        inviteCode: generateInviteCode(),
+        adminId: "",
+        createdAt: new Date().toISOString(),
       }
 
       const newUser = {
@@ -64,23 +85,24 @@ export default function RegisterPage() {
         nickname: nickname.trim() || phone.slice(-4),
         avatar: null,
         role: "admin" as const,
-        familyId: "",
+        familyId: family.id,
         createdAt: new Date().toISOString(),
       }
-      
-      const family = createFamily(familyName.trim(), newUser.id)
-      const userWithFamily = { ...newUser, familyId: family.id }
 
-      setCurrentUser(userWithFamily)
-      setMembers([userWithFamily])
+      family.adminId = newUser.id
 
-      users.push(userWithFamily)
-      localStorage.setItem("baby-feeding-users", JSON.stringify(users))
+      await fetchJson("/api/families", {
+        method: "POST",
+        body: JSON.stringify(family),
+      })
+      await fetchJson("/api/users", {
+        method: "POST",
+        body: JSON.stringify(newUser),
+      })
 
-      const storedFamilies = localStorage.getItem("baby-feeding-families")
-      const families = storedFamilies ? JSON.parse(storedFamilies) : []
-      families.push(family)
-      localStorage.setItem("baby-feeding-families", JSON.stringify(families))
+      setCurrentUser(newUser)
+      setFamily(family)
+      setMembers([newUser])
 
       router.push("/")
     } catch (err) {
@@ -114,19 +136,15 @@ export default function RegisterPage() {
     setError("")
 
     try {
-      const storedUsers = localStorage.getItem("baby-feeding-users")
-      const users = storedUsers ? JSON.parse(storedUsers) : []
-      
-      if (users.some((u: { phone: string }) => u.phone === phone)) {
+      const existingUser = await fetchJson(`/api/users?phone=${encodeURIComponent(phone)}`)
+      if (existingUser) {
         setError("该手机号已注册")
         setLoading(false)
         return
       }
 
-      const storedFamilies = localStorage.getItem("baby-feeding-families")
-      const families = storedFamilies ? JSON.parse(storedFamilies) : []
-      const family = families.find((f: { inviteCode: string }) => 
-        f.inviteCode.toUpperCase() === inviteCode.trim().toUpperCase()
+      const family = await fetchJson(
+        `/api/families?inviteCode=${encodeURIComponent(inviteCode.trim().toUpperCase())}`
       )
 
       if (!family) {
@@ -146,15 +164,18 @@ export default function RegisterPage() {
         createdAt: new Date().toISOString(),
       }
 
+      await fetchJson("/api/users", {
+        method: "POST",
+        body: JSON.stringify(newUser),
+      })
+
       setCurrentUser(newUser)
       setFamily(family)
-      
-      const familyMembers = users.filter((u: { familyId: string }) => u.familyId === family.id)
-      familyMembers.push(newUser)
-      setMembers(familyMembers)
 
-      users.push(newUser)
-      localStorage.setItem("baby-feeding-users", JSON.stringify(users))
+      const familyMembers = await fetchJson(
+        `/api/users?familyId=${encodeURIComponent(family.id)}`
+      )
+      setMembers(familyMembers || [])
 
       router.push("/")
     } catch (err) {

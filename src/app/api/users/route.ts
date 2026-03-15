@@ -1,22 +1,30 @@
 import { NextResponse } from "next/server"
-import db from "@/server/db"
+import { getDb } from "@/server/cloudbase"
+
+export const runtime = "nodejs"
 
 export async function GET(request: Request) {
+  const db = getDb()
   const { searchParams } = new URL(request.url)
   const phone = searchParams.get("phone")
+  const familyId = searchParams.get("familyId")
 
   if (phone) {
-    const stmt = db.prepare("SELECT id, phone, nickname, avatar, role, family_id as familyId, created_at as createdAt FROM users WHERE phone = ?")
-    const user = stmt.get(phone)
-    return NextResponse.json(user || null)
+    const result = await db.collection("users").where({ phone }).get()
+    return NextResponse.json(result.data?.[0] || null)
   }
 
-  const stmt = db.prepare("SELECT id, phone, nickname, avatar, role, family_id as familyId, created_at as createdAt FROM users ORDER BY created_at DESC")
-  const users = stmt.all()
-  return NextResponse.json(users)
+  if (familyId) {
+    const result = await db.collection("users").where({ familyId }).orderBy("createdAt", "desc").get()
+    return NextResponse.json(result.data || [])
+  }
+
+  const result = await db.collection("users").orderBy("createdAt", "desc").get()
+  return NextResponse.json(result.data || [])
 }
 
 export async function POST(request: Request) {
+  const db = getDb()
   const body = await request.json()
   const { id, phone, password, nickname, avatar, role, familyId } = body || {}
 
@@ -24,11 +32,23 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "参数不完整" }, { status: 400 })
   }
 
-  const stmt = db.prepare(
-    "INSERT INTO users (id, phone, password, nickname, avatar, role, family_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
-  )
   try {
-    stmt.run(id, phone, password, nickname, avatar || null, role, familyId || null, new Date().toISOString())
+    const existing = await db.collection("users").where({ phone }).get()
+    if (existing.data?.length) {
+      return NextResponse.json({ error: "手机号已存在" }, { status: 400 })
+    }
+    await db.collection("users").add({
+      data: {
+        id,
+        phone,
+        password,
+        nickname,
+        avatar: avatar || null,
+        role,
+        familyId: familyId || null,
+        createdAt: new Date().toISOString(),
+      },
+    })
   } catch (error: any) {
     return NextResponse.json({ error: error?.message || "创建失败" }, { status: 500 })
   }

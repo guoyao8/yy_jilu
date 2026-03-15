@@ -400,7 +400,7 @@ export default function HomePage() {
                         className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center"
                         onClick={(event) => {
                           event.stopPropagation()
-                          router.push(`/babies/${baby.id}`)
+                          router.push(`/growth?babyId=${baby.id}`)
                         }}
                       >
                         <span className="text-lg">{baby.gender === "male" ? "👦" : "👧"}</span>
@@ -433,13 +433,13 @@ export default function HomePage() {
           </div>
 
           <Card className="mb-4">
-            <CardHeader>
-              <CardTitle className="text-lg">快速记录下一次喂养</CardTitle>
+            <CardHeader className="flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-lg">真好，又吃了一顿</CardTitle>
+              <span className="text-sm text-gray-500">
+                {sortedBabies.find(b => b.id === selectedBaby)?.name || "未选择"}
+              </span>
             </CardHeader>
             <CardContent className="space-y-4">
-              <p className="text-sm text-gray-500">
-                当前宝宝：{sortedBabies.find(b => b.id === selectedBaby)?.name || "未选择"}
-              </p>
 
               <div className="grid grid-cols-2 gap-2">
                 {quickAmounts.map((value) => (

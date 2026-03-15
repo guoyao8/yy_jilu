@@ -33,6 +33,7 @@ export default function BabyDetailPage() {
   const [growthHeight, setGrowthHeight] = useState("")
   const [growthWeight, setGrowthWeight] = useState("")
   const [growthDate, setGrowthDate] = useState(new Date().toISOString().split("T")[0])
+  const [diaryTab, setDiaryTab] = useState<"all" | "photo" | "video" | "milestone" | "growth">("all")
 
   const baby = babies.find(b => b.id === babyId)
   const babyPhotos = photos.filter(p => p.babyId === babyId).sort((a, b) => 
@@ -50,12 +51,6 @@ export default function BabyDetailPage() {
       router.push("/login")
     }
   }, [currentUser, hasHydrated, router])
-
-  if (!currentUser || !baby) {
-    return null
-  }
-
-  const isAdmin = currentUser.role === "admin"
 
   const handleAddPhoto = () => {
     const finalUrl = photoFileData || photoUrl.trim()
@@ -190,6 +185,22 @@ export default function BabyDetailPage() {
       }))
   }, [babyPhotos, babyMilestones, babyGrowthRecords])
 
+  const filteredTimelineGroups = useMemo(() => {
+    if (diaryTab === "all") return timelineGroups
+    return timelineGroups
+      .map((group) => ({
+        dateKey: group.dateKey,
+        items: group.items.filter((item) => item.type === diaryTab),
+      }))
+      .filter((group) => group.items.length > 0)
+  }, [timelineGroups, diaryTab])
+
+  if (!currentUser || !baby) {
+    return null
+  }
+
+  const isAdmin = currentUser.role === "admin"
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-6">
       <div className="flex items-center mb-6">
@@ -227,149 +238,163 @@ export default function BabyDetailPage() {
           
         </CardContent>
       </Card>
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="text-lg">快捷记录</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex flex-wrap gap-2">
-            <Button size="sm" onClick={() => setShowAddPhoto(true)}>
-              <Camera className="w-4 h-4 mr-1" />
-              添加照片/视频
-            </Button>
-            <Button size="sm" variant="outline" onClick={() => setShowAddMilestone(true)}>
-              <Star className="w-4 h-4 mr-1" />
-              添加里程碑
-            </Button>
-            <Button size="sm" variant="outline" onClick={() => setShowAddGrowth(true)}>
-              <TrendingUp className="w-4 h-4 mr-1" />
-              添加身高体重
-            </Button>
-          </div>
-
-          {showAddPhoto && (
-            <div className="p-4 bg-gray-50 rounded-lg space-y-3">
-              <div className="flex space-x-2">
-                <button
-                  onClick={() => setPhotoType("photo")}
-                  className={`flex items-center space-x-2 px-3 py-2 rounded-lg ${
-                    photoType === "photo" ? "bg-primary-500 text-white" : "bg-gray-200"
-                  }`}
-                >
-                  <Camera className="w-4 h-4" />
-                  <span>照片</span>
-                </button>
-                <button
-                  onClick={() => setPhotoType("video")}
-                  className={`flex items-center space-x-2 px-3 py-2 rounded-lg ${
-                    photoType === "video" ? "bg-primary-500 text-white" : "bg-gray-200"
-                  }`}
-                >
-                  <Video className="w-4 h-4" />
-                  <span>视频</span>
-                </button>
-              </div>
-              <div>
-                <input
-                  type="file"
-                  accept={photoType === "photo" ? "image/*" : "video/*"}
-                  onChange={handlePhotoFileChange}
-                  className="hidden"
-                  id="media-input"
-                />
-                <label htmlFor="media-input">
-                  <Button type="button" variant="outline">
-                    选择文件
-                  </Button>
-                </label>
-                {photoFileData && (
-                  <p className="text-xs text-gray-500 mt-2">已选择文件</p>
-                )}
-              </div>
-              <Input
-                placeholder="或粘贴链接（可选）"
-                value={photoUrl}
-                onChange={(e) => setPhotoUrl(e.target.value)}
-              />
-              <Input
-                placeholder="描述（可选）"
-                value={photoDesc}
-                onChange={(e) => setPhotoDesc(e.target.value)}
-              />
-              <div className="flex space-x-2">
-                <Button onClick={handleAddPhoto}>保存</Button>
-                <Button variant="outline" onClick={() => setShowAddPhoto(false)}>取消</Button>
-              </div>
+      {showAddPhoto && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="text-lg">添加照片/视频</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex space-x-2">
+              <button
+                onClick={() => setPhotoType("photo")}
+                className={`flex items-center space-x-2 px-3 py-2 rounded-lg ${
+                  photoType === "photo" ? "bg-primary-500 text-white" : "bg-gray-200"
+                }`}
+              >
+                <Camera className="w-4 h-4" />
+                <span>照片</span>
+              </button>
+              <button
+                onClick={() => setPhotoType("video")}
+                className={`flex items-center space-x-2 px-3 py-2 rounded-lg ${
+                  photoType === "video" ? "bg-primary-500 text-white" : "bg-gray-200"
+                }`}
+              >
+                <Video className="w-4 h-4" />
+                <span>视频</span>
+              </button>
             </div>
-          )}
-
-          {showAddMilestone && (
-            <div className="p-4 bg-gray-50 rounded-lg space-y-3">
-              <Input
-                placeholder="里程碑标题（如：第一次翻身）"
-                value={milestoneTitle}
-                onChange={(e) => setMilestoneTitle(e.target.value)}
+            <div>
+              <input
+                type="file"
+                accept={photoType === "photo" ? "image/*" : "video/*"}
+                onChange={handlePhotoFileChange}
+                className="hidden"
+                id="media-input"
               />
-              <Input
-                placeholder="描述（可选）"
-                value={milestoneDesc}
-                onChange={(e) => setMilestoneDesc(e.target.value)}
-              />
-              <Input
-                type="date"
-                value={milestoneDate}
-                onChange={(e) => setMilestoneDate(e.target.value)}
-              />
-              <div className="flex space-x-2">
-                <Button onClick={handleAddMilestone}>保存</Button>
-                <Button variant="outline" onClick={() => setShowAddMilestone(false)}>取消</Button>
-              </div>
+              <label htmlFor="media-input">
+                <Button type="button" variant="outline">
+                  选择文件
+                </Button>
+              </label>
+              {photoFileData && (
+                <p className="text-xs text-gray-500 mt-2">已选择文件</p>
+              )}
             </div>
-          )}
-
-          {showAddGrowth && (
-            <div className="p-4 bg-gray-50 rounded-lg space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <Input
-                  placeholder="身高"
-                  type="number"
-                  value={growthHeight}
-                  onChange={(e) => setGrowthHeight(e.target.value)}
-                />
-                <Input
-                  placeholder="体重"
-                  type="number"
-                  value={growthWeight}
-                  onChange={(e) => setGrowthWeight(e.target.value)}
-                />
-              </div>
-              <Input
-                type="date"
-                value={growthDate}
-                onChange={(e) => setGrowthDate(e.target.value)}
-              />
-              <div className="flex space-x-2">
-                <Button onClick={handleAddGrowth}>保存</Button>
-                <Button variant="outline" onClick={() => setShowAddGrowth(false)}>取消</Button>
-              </div>
+            <Input
+              placeholder="或粘贴链接（可选）"
+              value={photoUrl}
+              onChange={(e) => setPhotoUrl(e.target.value)}
+            />
+            <Input
+              placeholder="描述（可选）"
+              value={photoDesc}
+              onChange={(e) => setPhotoDesc(e.target.value)}
+            />
+            <div className="flex space-x-2">
+              <Button onClick={handleAddPhoto}>保存</Button>
+              <Button variant="outline" onClick={() => setShowAddPhoto(false)}>取消</Button>
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
+
+      {showAddMilestone && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="text-lg">添加里程碑</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Input
+              placeholder="里程碑标题（如：第一次翻身）"
+              value={milestoneTitle}
+              onChange={(e) => setMilestoneTitle(e.target.value)}
+            />
+            <Input
+              placeholder="描述（可选）"
+              value={milestoneDesc}
+              onChange={(e) => setMilestoneDesc(e.target.value)}
+            />
+            <Input
+              type="date"
+              value={milestoneDate}
+              onChange={(e) => setMilestoneDate(e.target.value)}
+            />
+            <div className="flex space-x-2">
+              <Button onClick={handleAddMilestone}>保存</Button>
+              <Button variant="outline" onClick={() => setShowAddMilestone(false)}>取消</Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {showAddGrowth && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="text-lg">添加身高体重</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <Input
+                placeholder="身高"
+                type="number"
+                value={growthHeight}
+                onChange={(e) => setGrowthHeight(e.target.value)}
+              />
+              <Input
+                placeholder="体重"
+                type="number"
+                value={growthWeight}
+                onChange={(e) => setGrowthWeight(e.target.value)}
+              />
+            </div>
+            <Input
+              type="date"
+              value={growthDate}
+              onChange={(e) => setGrowthDate(e.target.value)}
+            />
+            <div className="flex space-x-2">
+              <Button onClick={handleAddGrowth}>保存</Button>
+              <Button variant="outline" onClick={() => setShowAddGrowth(false)}>取消</Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">时间轴</CardTitle>
+          <CardTitle className="text-lg">宝宝成长日记</CardTitle>
         </CardHeader>
         <CardContent>
-          {timelineGroups.length === 0 ? (
+          <div className="flex gap-2 mb-4 overflow-x-auto pb-1">
+            {[
+              { key: "all", label: "全部" },
+              { key: "photo", label: "照片" },
+              { key: "video", label: "视频" },
+              { key: "milestone", label: "里程碑" },
+              { key: "growth", label: "身高体重" },
+            ].map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setDiaryTab(tab.key as typeof diaryTab)}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap ${
+                  diaryTab === tab.key
+                    ? "bg-primary-500 text-white"
+                    : "bg-gray-100 text-gray-600"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+          {filteredTimelineGroups.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               <Clock className="w-12 h-12 mx-auto mb-2 text-gray-300" />
               <p>暂无成长记录</p>
             </div>
           ) : (
             <div className="space-y-6">
-              {timelineGroups.map((group) => (
+              {filteredTimelineGroups.map((group) => (
                 <div key={group.dateKey}>
                   <p className="text-sm font-medium text-gray-700 mb-3">{formatDate(group.dateKey)}</p>
                   <div className="space-y-3">
@@ -399,6 +424,7 @@ export default function BabyDetailPage() {
           )}
         </CardContent>
       </Card>
+
     </div>
   )
 }
