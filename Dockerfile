@@ -10,4 +10,4 @@ WORKDIR /app
 ENV NODE_ENV=production
 COPY --from=builder /app ./
 EXPOSE 80
-CMD ["npm","run","start","--","-p","80"]
+CMD ["sh","-c","npm run start -- -p ${PORT:-80}"]
