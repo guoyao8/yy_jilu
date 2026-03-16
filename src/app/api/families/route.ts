@@ -23,7 +23,7 @@ export async function GET(request: Request) {
     const result = await db.collection("families").orderBy("createdAt", "desc").get()
     return NextResponse.json(result.data || [])
   } catch (error: any) {
-    return NextResponse.json({ error: error?.message || "查询失败" }, { status: 500 })
+    return NextResponse.json({ error: error?.message || "查询失败" }, { status: 400 })
   }
 }
 
@@ -51,7 +51,7 @@ export async function POST(request: Request) {
       },
     })
   } catch (error: any) {
-    return NextResponse.json({ error: error?.message || "创建失败" }, { status: 500 })
+    return NextResponse.json({ error: error?.message || "创建失败" }, { status: 400 })
   }
 
   return NextResponse.json({ success: true })
