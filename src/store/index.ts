@@ -120,6 +120,10 @@ export const useAppStore = create<AppState>()(
       setFeedingRecords: (feedingRecords) => set({ feedingRecords }),
 
       hydrateFamilyData: async (familyId) => {
+        const localBabies = get().babies
+        const localFeedingRecords = get().feedingRecords
+        const isAdmin = get().currentUser?.role === "admin"
+
         const fetchJson = async (url: string) => {
           const res = await fetch(url)
           if (!res.ok) {
@@ -129,17 +133,58 @@ export const useAppStore = create<AppState>()(
           return res.json()
         }
 
-        const babies = await fetchJson(`/api/babies?familyId=${encodeURIComponent(familyId)}`).catch(
-          () => []
+        const babiesRes = await fetchJson(`/api/babies?familyId=${encodeURIComponent(familyId)}`).catch(
+          () => null
         )
-        const feedingRecords = await fetchJson(
+        const feedingRecordsRes = await fetchJson(
           `/api/feeding-records?familyId=${encodeURIComponent(familyId)}`
-        ).catch(() => [])
+        ).catch(() => null)
 
-        set({
-          babies: Array.isArray(babies) ? babies : [],
-          feedingRecords: Array.isArray(feedingRecords) ? feedingRecords : [],
-        })
+        const remoteBabies = Array.isArray(babiesRes) ? babiesRes : null
+        const remoteFeedingRecords = Array.isArray(feedingRecordsRes) ? feedingRecordsRes : null
+
+        if (
+          isAdmin &&
+          remoteBabies &&
+          remoteFeedingRecords &&
+          remoteBabies.length === 0 &&
+          remoteFeedingRecords.length === 0 &&
+          (localBabies.length > 0 || localFeedingRecords.length > 0)
+        ) {
+          await Promise.allSettled([
+            ...localBabies.map((b) =>
+              fetch("/api/babies", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(b),
+              })
+            ),
+            ...localFeedingRecords.map((r) =>
+              fetch("/api/feeding-records", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(r),
+              })
+            ),
+          ])
+
+          const babiesRes2 = await fetchJson(`/api/babies?familyId=${encodeURIComponent(familyId)}`).catch(
+            () => null
+          )
+          const feedingRecordsRes2 = await fetchJson(
+            `/api/feeding-records?familyId=${encodeURIComponent(familyId)}`
+          ).catch(() => null)
+
+          const remoteBabies2 = Array.isArray(babiesRes2) ? babiesRes2 : null
+          const remoteFeedingRecords2 = Array.isArray(feedingRecordsRes2) ? feedingRecordsRes2 : null
+
+          if (remoteBabies2) set({ babies: remoteBabies2 })
+          if (remoteFeedingRecords2) set({ feedingRecords: remoteFeedingRecords2 })
+          return
+        }
+
+        if (remoteBabies) set({ babies: remoteBabies })
+        if (remoteFeedingRecords) set({ feedingRecords: remoteFeedingRecords })
       },
       
       addBaby: async (babyData) => {
