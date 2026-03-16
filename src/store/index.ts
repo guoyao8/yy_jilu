@@ -129,10 +129,12 @@ export const useAppStore = create<AppState>()(
           return res.json()
         }
 
-        const [babies, feedingRecords] = await Promise.all([
-          fetchJson(`/api/babies?familyId=${encodeURIComponent(familyId)}`),
-          fetchJson(`/api/feeding-records?familyId=${encodeURIComponent(familyId)}`),
-        ])
+        const babies = await fetchJson(`/api/babies?familyId=${encodeURIComponent(familyId)}`).catch(
+          () => []
+        )
+        const feedingRecords = await fetchJson(
+          `/api/feeding-records?familyId=${encodeURIComponent(familyId)}`
+        ).catch(() => [])
 
         set({
           babies: Array.isArray(babies) ? babies : [],
