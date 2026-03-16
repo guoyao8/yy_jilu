@@ -26,12 +26,15 @@ interface AppState {
   updateMember: (id: string, updates: Partial<User>) => void
   removeMember: (id: string) => void
   setMembers: (members: User[]) => void
+  setBabies: (babies: Baby[]) => void
+  setFeedingRecords: (records: FeedingRecord[]) => void
+  hydrateFamilyData: (familyId: string) => Promise<void>
   
-  addBaby: (baby: Omit<Baby, 'id' | 'familyId' | 'createdAt'>) => Baby
+  addBaby: (baby: Omit<Baby, 'id' | 'familyId' | 'createdAt'>) => Promise<Baby>
   updateBaby: (id: string, updates: Partial<Baby>) => void
   removeBaby: (id: string) => void
   
-  addFeedingRecord: (record: Omit<FeedingRecord, 'id' | 'familyId' | 'createdAt'>) => FeedingRecord
+  addFeedingRecord: (record: Omit<FeedingRecord, 'id' | 'familyId' | 'createdAt'>) => Promise<FeedingRecord>
   updateFeedingRecord: (id: string, updates: Partial<FeedingRecord>) => void
   removeFeedingRecord: (id: string) => void
   
@@ -111,8 +114,33 @@ export const useAppStore = create<AppState>()(
       })),
       
       setMembers: (members) => set({ members }),
+
+      setBabies: (babies) => set({ babies }),
+
+      setFeedingRecords: (feedingRecords) => set({ feedingRecords }),
+
+      hydrateFamilyData: async (familyId) => {
+        const fetchJson = async (url: string) => {
+          const res = await fetch(url)
+          if (!res.ok) {
+            const data = await res.json().catch(() => null)
+            throw new Error(data?.error || "请求失败")
+          }
+          return res.json()
+        }
+
+        const [babies, feedingRecords] = await Promise.all([
+          fetchJson(`/api/babies?familyId=${encodeURIComponent(familyId)}`),
+          fetchJson(`/api/feeding-records?familyId=${encodeURIComponent(familyId)}`),
+        ])
+
+        set({
+          babies: Array.isArray(babies) ? babies : [],
+          feedingRecords: Array.isArray(feedingRecords) ? feedingRecords : [],
+        })
+      },
       
-      addBaby: (babyData) => {
+      addBaby: async (babyData) => {
         const { family } = get()
         if (!family) throw new Error('No family')
         
@@ -123,6 +151,16 @@ export const useAppStore = create<AppState>()(
           createdAt: new Date().toISOString(),
         }
         
+        const res = await fetch("/api/babies", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(baby),
+        })
+        if (!res.ok) {
+          const data = await res.json().catch(() => null)
+          throw new Error(data?.error || "请求失败")
+        }
+
         set((state) => ({ babies: [...state.babies, baby] }))
         return baby
       },
@@ -135,7 +173,7 @@ export const useAppStore = create<AppState>()(
         babies: state.babies.filter(b => b.id !== id)
       })),
       
-      addFeedingRecord: (recordData) => {
+      addFeedingRecord: async (recordData) => {
         const { family } = get()
         if (!family) throw new Error('No family')
         
@@ -146,6 +184,16 @@ export const useAppStore = create<AppState>()(
           createdAt: new Date().toISOString(),
         }
         
+        const res = await fetch("/api/feeding-records", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(record),
+        })
+        if (!res.ok) {
+          const data = await res.json().catch(() => null)
+          throw new Error(data?.error || "请求失败")
+        }
+
         set((state) => ({ feedingRecords: [...state.feedingRecords, record] }))
         return record
       },

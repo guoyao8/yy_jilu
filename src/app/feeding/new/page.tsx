@@ -50,7 +50,7 @@ export default function NewFeedingPage() {
 
     try {
       const durationValue = duration ? parseInt(duration) : undefined
-      addFeedingRecord({
+      await addFeedingRecord({
         babyId: selectedBaby,
         memberId: currentUser.id,
         memberName: currentUser.nickname || currentUser.phone.slice(-4),

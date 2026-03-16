@@ -10,7 +10,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card"
 
 export default function LoginPage() {
   const router = useRouter()
-  const { setCurrentUser, setFamily, setMembers, addMember } = useAppStore()
+  const { setCurrentUser, setFamily, setMembers, hydrateFamilyData } = useAppStore()
   const [phone, setPhone] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
@@ -59,6 +59,8 @@ export default function LoginPage() {
           `/api/users?familyId=${encodeURIComponent(userFamily.id)}`
         )
         setMembers(familyMembers || [])
+
+        await hydrateFamilyData(userFamily.id)
       }
 
       router.push("/")

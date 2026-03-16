@@ -223,7 +223,7 @@ export default function HomePage() {
     if (!parsedVoice.babyId || !parsedVoice.amount || !parsedVoice.endTime) {
       return
     }
-    addFeedingRecord({
+    void addFeedingRecord({
       babyId: parsedVoice.babyId,
       memberId: currentUser.id,
       memberName: currentUser.nickname || currentUser.phone.slice(-4),
@@ -335,7 +335,7 @@ export default function HomePage() {
     const timeValue = feedingTime ? new Date(feedingTime).toISOString() : new Date().toISOString()
     setSaving(true)
     try {
-      addFeedingRecord({
+      await addFeedingRecord({
         babyId: selectedBaby,
         memberId: currentUser.id,
         memberName: currentUser.nickname || currentUser.phone.slice(-4),

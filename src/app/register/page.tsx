@@ -11,7 +11,7 @@ import { generateId, generateInviteCode } from "@/lib/utils"
 
 export default function RegisterPage() {
   const router = useRouter()
-  const { setCurrentUser, setFamily, setMembers } = useAppStore()
+  const { setCurrentUser, setFamily, setMembers, hydrateFamilyData } = useAppStore()
   const [phone, setPhone] = useState("")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
@@ -104,6 +104,8 @@ export default function RegisterPage() {
       setFamily(family)
       setMembers([newUser])
 
+      await hydrateFamilyData(family.id)
+
       router.push("/")
     } catch (err) {
       console.error(err)
@@ -176,6 +178,8 @@ export default function RegisterPage() {
         `/api/users?familyId=${encodeURIComponent(family.id)}`
       )
       setMembers(familyMembers || [])
+
+      await hydrateFamilyData(family.id)
 
       router.push("/")
     } catch (err) {

@@ -59,7 +59,7 @@ export default function NewBabyPage() {
     setLoading(true)
 
     try {
-      addBaby({
+      await addBaby({
         name: name.trim(),
         gender,
         birthDate,
