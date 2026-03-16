@@ -4,23 +4,27 @@ import { getDb } from "@/server/cloudbase"
 export const runtime = "nodejs"
 
 export async function GET(request: Request) {
-  const db = getDb()
-  const { searchParams } = new URL(request.url)
-  const inviteCode = searchParams.get("inviteCode")
-  const id = searchParams.get("id")
+  try {
+    const db = getDb()
+    const { searchParams } = new URL(request.url)
+    const inviteCode = searchParams.get("inviteCode")
+    const id = searchParams.get("id")
 
-  if (id) {
-    const result = await db.collection("families").where({ id }).get()
-    return NextResponse.json(result.data?.[0] || null)
+    if (id) {
+      const result = await db.collection("families").where({ id }).get()
+      return NextResponse.json(result.data?.[0] || null)
+    }
+
+    if (inviteCode) {
+      const result = await db.collection("families").where({ inviteCode }).get()
+      return NextResponse.json(result.data?.[0] || null)
+    }
+
+    const result = await db.collection("families").orderBy("createdAt", "desc").get()
+    return NextResponse.json(result.data || [])
+  } catch (error: any) {
+    return NextResponse.json({ error: error?.message || "查询失败" }, { status: 500 })
   }
-
-  if (inviteCode) {
-    const result = await db.collection("families").where({ inviteCode }).get()
-    return NextResponse.json(result.data?.[0] || null)
-  }
-
-  const result = await db.collection("families").orderBy("createdAt", "desc").get()
-  return NextResponse.json(result.data || [])
 }
 
 export async function POST(request: Request) {

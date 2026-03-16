@@ -1,3 +1,12 @@
 node_modules
 .next
 .env.local
+.trae/
+.agent/
+.agents/
+.claude/
+.kiro/
+.qoder/
+skills/
+skills-lock.json
+config/

@@ -19,8 +19,10 @@ export const getCloudbaseApp = () => {
         return undefined
       }
     })()
-  const secretId = process.env.CLOUDBASE_SECRET_ID
-  const secretKey = process.env.CLOUDBASE_SECRET_KEY
+  const secretId =
+    process.env.CLOUDBASE_SECRET_ID || process.env.TENCENTCLOUD_SECRETID
+  const secretKey =
+    process.env.CLOUDBASE_SECRET_KEY || process.env.TENCENTCLOUD_SECRETKEY
   if (!env) {
     throw new Error("CLOUDBASE 环境变量未配置")
   }
