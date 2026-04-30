@@ -11,3 +11,5 @@ node_modules
 skills/
 skills-lock.json
 config/
+.vercel
+data/

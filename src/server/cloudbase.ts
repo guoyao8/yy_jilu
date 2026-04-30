@@ -1,6 +1,7 @@
 import cloudbase from "@cloudbase/node-sdk"
 import fs from "fs"
 import path from "path"
+import { getLocalDb } from "./local-db"
 
 let app: ReturnType<typeof cloudbase.init> | null = null
 
@@ -35,5 +36,8 @@ export const getCloudbaseApp = () => {
 }
 
 export const getDb = () => {
+  if (process.env.USE_LOCAL_DB === "1") {
+    return getLocalDb()
+  }
   return getCloudbaseApp().database()
 }

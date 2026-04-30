@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { getDb } from "@/server/cloudbase"
 
 export const runtime = "nodejs"
+export const preferredRegion = "hkg1"
 
 const normalize = (doc: any) => {
   if (doc && typeof doc === "object" && doc.data && typeof doc.data === "object") {
