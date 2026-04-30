@@ -1,0 +1,40 @@
+.git
+.gitignore
+.next
+node_modules
+.env.local
+.env.*.local
+.DS_Store
+
+# 工具/编辑器
+.agent
+.agents
+.claude
+.kiro
+.qoder
+.trae
+.vscode
+.idea
+skills
+skills-lock.json
+config
+
+# Vercel 相关（腾讯云部署不需要）
+.vercel
+.vercelignore
+vercel.json
+
+# 小程序 / 云函数 / 压缩包
+miniprogram
+cloudfunctions
+scripts
+*.zip
+
+# 构建缓存
+tsconfig.tsbuildinfo
+
+# 文档 / 样本
+README*.md
+REPLICA_PLAN.md
+e2e_register.py
+data/

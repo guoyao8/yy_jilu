@@ -1,6 +1,32 @@
 {
+  "version": "2.0",
   "envId": "guoyao-5goory4823a3d840",
-  "cloudrun": {
-    "name": "yyjilu"
+  "$schema": "https://framework-1258016615.tcloudbaseapp.com/schema/latest.json",
+  "framework": {
+    "name": "yy-jilu",
+    "plugins": {
+      "yyjilu": {
+        "use": "@cloudbase/framework-plugin-container",
+        "inputs": {
+          "serviceName": "yyjilu",
+          "servicePath": "/",
+          "localAbsolutePath": "./",
+          "containerPort": 80,
+          "isPublic": true,
+          "cpu": 0.5,
+          "mem": 1,
+          "minNum": 0,
+          "maxNum": 5,
+          "policyType": "cpu",
+          "policyThreshold": 60,
+          "dockerfile": "Dockerfile",
+          "buildDir": "./",
+          "envParams": {
+            "NODE_ENV": "production",
+            "PORT": "80"
+          }
+        }
+      }
+    }
   }
 }
